@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
     int opt = TRUE;
     char *shutdown_signal = "exit";
     char *connection_full = "ERROR: Connection full.";
+    char *ok = "OK";
 
     // initialise all connection sockets to 0
     for (int i = 0; i < MAX_CLIENTS; ++i) {
@@ -149,8 +150,14 @@ int main(int argc, char *argv[]) {
                 printf("INFO: Disconnected (%d, %s:%d) - Connection full.\n", connection_socket,
                        inet_ntoa(client_address.sin_addr),
                        ntohs(client_address.sin_port));
+            } else {
+                // connection successful
+                flush_buffer(buffer);
+                memcpy(buffer, ok, strlen(ok));
+                send(connection_socket, buffer, strlen(buffer), 0);
             }
 
+            continue;
         }
 
         // activity at connection sockets
@@ -166,7 +173,8 @@ int main(int argc, char *argv[]) {
 
                 // handle exit signal
                 if (memcmp(buffer, shutdown_signal, strlen(shutdown_signal)) == 0) {
-                    printf("INFO: Disconnecting (%s:%d) -> %s\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port),
+                    printf("INFO: Disconnecting (%s:%d) -> %s\n", inet_ntoa(client_address.sin_addr),
+                           ntohs(client_address.sin_port),
                            buffer);
                     close(connection_socket);
                     connection_sockets[i] = 0;
@@ -178,19 +186,20 @@ int main(int argc, char *argv[]) {
                 printf("INFO: (%s:%d) -> %s\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port),
                        buffer);
 
-                // read from stdin and send to all connected clients
-                flush_buffer(buffer);
-                printf("> ");
-                scanf("%s", buffer);
-                for (int j = 0; j < MAX_CLIENTS; ++j) {
-                    if (connection_sockets[j] > 0) {
-                        send(connection_sockets[j], buffer, strlen(buffer), 0);
-                    }
-                }
-
             }
 
         }
+
+        // read from stdin and send to all connected clients
+        flush_buffer(buffer);
+        printf("> ");
+        scanf("%s", buffer);
+        for (int j = 0; j < MAX_CLIENTS; ++j) {
+            if (connection_sockets[j] > 0) {
+                send(connection_sockets[j], buffer, strlen(buffer), 0);
+            }
+        }
+
     }
 
     // close server socket

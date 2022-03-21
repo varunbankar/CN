@@ -52,6 +52,7 @@ int main(int argc, char const *argv[]) {
 
     // options
     char *exit_signal = "exit";
+    char *error_signal = "ERROR";
 
     // define server address
     struct sockaddr_in server_address;
@@ -63,6 +64,14 @@ int main(int argc, char const *argv[]) {
     status = connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address));
     if (status == -1) {
         perror("ERROR");
+        exit(-1);
+    }
+
+    // connection full
+    flush_buffer(buffer);
+    received_bytes = recv(client_socket, buffer, sizeof(buffer), 0);
+    if (memcmp(buffer, error_signal, strlen(error_signal)) == 0) {
+        printf("%s", buffer);
         exit(-1);
     }
 
